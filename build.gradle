@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+    id "me.champeau.jmh" version "0.7.2"
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    jmh 'org.apache.lucene:lucene-core:9.7'
+    jmh 'org.apache.solr:solr-core:10.0.0-SNAPSHOT'
+    implementation 'org.apache.lucene:lucene-core:9.7'
+    implementation 'org.apache.solr:solr-core:10.0.0-SNAPSHOT'
+//    testImplementation platform('org.junit:junit-bom:5.9.1')
+//    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
