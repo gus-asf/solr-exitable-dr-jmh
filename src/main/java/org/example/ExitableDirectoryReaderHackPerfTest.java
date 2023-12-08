@@ -56,8 +56,13 @@ public class ExitableDirectoryReaderHackPerfTest {
     public static final int TERMS_PER_ROUND = 1000;
 
     public static void main(String[] args) {
+        if (args.length < 3) {
+            System.out.println("Usage: java -jar test_dep-1.0-SNAPSHOT-unojar.jar <solr_home> <core_name> <java_home>");
+        }
+        String[] split = args[2].split("/");
+        String jdk = split[split.length-1];
         String descriptor = Instant.now() + "-" + WARM_ROUNDS + "-" + ROUNDS + "-" +
-                System.getProperty("solr.useExitableDirectoryReader");
+                System.getProperty("solr.useExitableDirectoryReader") + "-" + jdk;
 
         // This identifies the key parameters of the test.
         System.out.println(descriptor);
@@ -67,6 +72,7 @@ public class ExitableDirectoryReaderHackPerfTest {
             // and optionally set -Dsolr.useExitableDirectoryReader=true
             Path solrHome = Path.of(args[0]);
             String coreName = args[1];
+
             CoreContainer coreContainer = new CoreContainer(solrHome, null);
             coreContainer.load();
             Thread.sleep(10_000);
@@ -119,7 +125,7 @@ public class ExitableDirectoryReaderHackPerfTest {
                 timings, ra, descriptor);
 
         LongSummaryStatistics stats = timings.stream().collect(Collectors.summarizingLong(x -> x));
-        System.out.println(stats);
+        System.out.println("Simple Query:" + stats);
     }
 
     private static SolrIndexSearcher getSolrIndexSearcher(SolrCore solrCore) throws InterruptedException, ExecutionException {
