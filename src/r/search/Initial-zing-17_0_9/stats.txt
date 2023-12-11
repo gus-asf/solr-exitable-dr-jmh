@@ -1,0 +1,18 @@
+> summary(`standard-zing-17-data`)
+       V1           
+ Min.   :159191009  
+ 1st Qu.:160596975  
+ Median :161160886  
+ Mean   :164879661  
+ 3rd Qu.:161824068  
+ Max.   :331068232  
+> summary(`exitable-zing-17-data`)
+       V1           
+ Min.   :163088350  
+ 1st Qu.:164494281  
+ Median :165189092  
+ Mean   :169247194  
+ 3rd Qu.:166346830  
+ Max.   :482849956  
+> mean(`standard-zing-17-data`$V1)/mean(`exitable-zing-17-data`$V1)
+[1] 0.9741944

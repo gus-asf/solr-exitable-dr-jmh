@@ -1,0 +1,18 @@
+> summary(`exitable-data`)
+       V1           
+ Min.   :192886869  
+ 1st Qu.:196289216  
+ Median :206673998  
+ Mean   :213579053  
+ 3rd Qu.:207346020  
+ Max.   :440914683  
+> summary(`standard-data`)
+       V1           
+ Min.   :184308835  
+ 1st Qu.:187811046  
+ Median :197983482  
+ Mean   :204813374  
+ 3rd Qu.:198546010  
+ Max.   :431571301  
+> mean(`standard-data`$V1) / mean(`exitable-data`$V1)
+[1] 0.9589582

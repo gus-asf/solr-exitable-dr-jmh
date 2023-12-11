@@ -1,0 +1,18 @@
+> summary(`exitable-temurin-17-data`)
+       V1           
+ Min.   :174831148  
+ 1st Qu.:176203040  
+ Median :177070227  
+ Mean   :184039429  
+ 3rd Qu.:177882185  
+ Max.   :302179576  
+> summary(`standard-temurin-17-data`)
+       V1           
+ Min.   :172167769  
+ 1st Qu.:173669005  
+ Median :174498862  
+ Mean   :181623674  
+ 3rd Qu.:175263122  
+ Max.   :296078211  
+> mean(`standard-temurin-17-data`$V1)/mean(`exitable-temurin-17-data`$V1)
+[1] 0.9868737
