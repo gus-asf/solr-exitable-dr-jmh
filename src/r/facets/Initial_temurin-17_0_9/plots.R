@@ -26,17 +26,17 @@ getCurrentFileLocation <-  function()
 
 fnames <- list.files(getCurrentFileLocation())
 
-fils <- data.frame(fnames)
+fils <- data.frame(fnames) 
 
 datafils <- fils %>% filter(grepl("^\\d{4}.*", fnames))
 
 parsed <- strcapture(pattern = "(^\\d{4}.*T[^.]+)[^-]+-(\\d+)(.*)$",
                      x = datafils$fnames,
-                     proto = list(date = character(),  warmRnds = integer(),foo = character()), perl=TRUE)
+                    proto = list(date = character(),  warmRnds = integer(),foo = character()), perl=TRUE)
 
 parsed <- strcapture(pattern = "(^\\d{4}.*T[^.]+)[^-]+-(\\d+)-(\\d+)-(null|true)-(?:.*-)?(\\w+)-(\\w+).*\\.txt$",
                      x = datafils$fnames,
-                     proto = list(date = character(), warmRnds = integer(), testRnds=integer(), type=character(),feature=character(),stage=character()))
+           proto = list(date = character(), warmRnds = integer(), testRnds=integer(), type=character(),feature=character(),stage=character()))
 
 parsed["original"] = datafils
 

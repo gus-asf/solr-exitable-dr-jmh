@@ -80,8 +80,10 @@ public class ExitableDirectoryReaderHackPerfTest {
             if (solrCore == null) {
                 throw new RuntimeException("Could not find core:" + coreName);
             }
-            perfTestQueries(solrCore, descriptor);
-            perfTestFacets(solrCore, descriptor);
+            File queryFile = ensureTermsFile(solrCore);
+            ArrayList<TermQuery> queryTerms = loadTermsFile(queryFile);
+            //perfTestQueries(solrCore, descriptor, queryTerms);
+            perfTestFacets(solrCore, descriptor, queryTerms);
             coreContainer.shutdown();
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
@@ -91,28 +93,42 @@ public class ExitableDirectoryReaderHackPerfTest {
         }
     }
 
-    private static void perfTestFacets(SolrCore solrCore, String descriptor) {
-        //TODO: loop through terms, collect timings, etc
+    private static void perfTestFacets(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms) throws IOException, InterruptedException {
+        requestfacets(solrCore, descriptor, queryTerms, 0, 5000,"warming", 50);
+        requestfacets(solrCore, descriptor, queryTerms, 5000,500, "data",0);
+    }
 
+    private static LocalSolrQueryRequest makeFacetQuery(SolrCore solrCore, String term) {
         ModifiableSolrParams solrParams = new ModifiableSolrParams();
-        solrParams.set(CommonParams.Q, "*:*");
+        solrParams.set(CommonParams.Q, "randomLabel:\"" + term + "\"");
         solrParams.set("facet", "true");
         solrParams.set("facet.field", "randomLabel");
         LocalSolrQueryRequest localSolrQueryRequest = new LocalSolrQueryRequest(solrCore, solrParams);
-
-        SolrQueryResponse rsp = new SolrQueryResponse();
-        PluginBag<SolrRequestHandler> requestHandlers = solrCore.getRequestHandlers();
-        System.out.println(requestHandlers.keySet());
-
-        solrCore.execute(solrCore.getRequestHandler("/select"), localSolrQueryRequest, rsp);
-
-        System.out.println(rsp.getValues());
+        return localSolrQueryRequest;
     }
 
-    private static void perfTestQueries(SolrCore solrCore, String descriptor) throws IOException, InterruptedException, ExecutionException {
+    private static void requestfacets(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms, int offset, int num, String label, int delay) throws IOException, InterruptedException {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-facet-" + label + ".txt"));) {
+            for (int i = offset; i < num + offset; i++) {
+                TermQuery termQuery = queryTerms.get(i);
+                String text = termQuery.getTerm().text();
+                System.out.println(text);
+                LocalSolrQueryRequest localSolrQueryRequest = makeFacetQuery(solrCore, text);
+                // We want to issue facet queries
+                SolrQueryResponse rsp = new SolrQueryResponse();
+                long start = System.nanoTime();
+                solrCore.execute(solrCore.getRequestHandler("/select"), localSolrQueryRequest, rsp);
+                long end = System.nanoTime();
+                long duration = end - start;
+                pw.println(duration);
+                Thread.sleep(delay);
+            }
+        }
+    }
+
+    private static void perfTestQueries(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms) throws IOException, InterruptedException, ExecutionException {
         // for accurate comparison and faster testing write down our queries and re-use them.
-        File queryFile = ensureTermsFile(solrCore);
-        ArrayList<TermQuery> queryTerms = loadTermsFile(queryFile);
+        
         ArrayList<Long> timings = new ArrayList<>();
         // throw away 100 runs as warmup
         RolingAverage ra = new RolingAverage(20);
