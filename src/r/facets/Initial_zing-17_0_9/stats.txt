@@ -1,0 +1,28 @@
+> mean(`versus`$standard)/mean(`versus`$exitable)
+[1] 0.9448418
+> summary(versus$standard)
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max.
+ 1346573  2126748  3843288  3429580  3971860 66672935
+> summary(versus$exitable)
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max.
+ 1389524  2346035  3951782  3629792  4212518 64879095
+> wilcox.test(versus$standard,versus$exitable)
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  versus$standard and versus$exitable
+W = 914087073, p-value < 2.2e-16
+alternative hypothesis: true location shift is not equal to 0
+
+> t.test(versus$standard,versus$exitable)
+
+	Welch Two Sample t-test
+
+data:  versus$standard and versus$exitable
+t = -21.672, df = 99983, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -218319.9 -182105.6
+sample estimates:
+mean of x mean of y
+  3429580   3629792

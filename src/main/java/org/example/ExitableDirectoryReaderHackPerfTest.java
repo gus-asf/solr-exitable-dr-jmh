@@ -81,8 +81,9 @@ public class ExitableDirectoryReaderHackPerfTest {
                 throw new RuntimeException("Could not find core:" + coreName);
             }
             File queryFile = ensureTermsFile(solrCore);
-            ArrayList<TermQuery> queryTerms = loadTermsFile(queryFile);
-            //perfTestQueries(solrCore, descriptor, queryTerms);
+            ArrayList<TermQuery> queryTerms = loadTermsFile(queryFile, TERMS_PER_ROUND);
+//            perfTestQueries(solrCore, descriptor, queryTerms);
+            queryTerms = loadTermsFile(queryFile, 100_000);
             perfTestFacets(solrCore, descriptor, queryTerms);
             coreContainer.shutdown();
         } catch (Exception e) {
@@ -94,8 +95,8 @@ public class ExitableDirectoryReaderHackPerfTest {
     }
 
     private static void perfTestFacets(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms) throws IOException, InterruptedException {
-        requestfacets(solrCore, descriptor, queryTerms, 0, 5000,"warming", 50);
-        requestfacets(solrCore, descriptor, queryTerms, 5000,500, "data",0);
+        requestfacets(solrCore, descriptor, queryTerms, 0, 50000,"warming", 5);
+        requestfacets(solrCore, descriptor, queryTerms, 50000,50000, "data",0);
     }
 
     private static LocalSolrQueryRequest makeFacetQuery(SolrCore solrCore, String term) {
@@ -153,7 +154,7 @@ public class ExitableDirectoryReaderHackPerfTest {
 
     private static void testQTerms(int rounds, int startTerm, ArrayList<TermQuery> queryTerms, SolrIndexSearcher indexSearcher, ArrayList<Long> timings, RolingAverage ra, String descriptor) throws IOException {
         System.out.println("START TEST");
-        PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-data.txt"));
+        PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-search-data.txt"));
         // AMD Ryzen Threadripper 1950X (2185.537 MHZ, not overclocked)
         for (int i = startTerm; i < rounds + startTerm; i++) {
             long timing = queryEachOnce(queryTerms, indexSearcher);
@@ -165,7 +166,7 @@ public class ExitableDirectoryReaderHackPerfTest {
     }
 
     private static void warmUpQTerms(int rounds, ArrayList<TermQuery> queryTerms, SolrIndexSearcher indexSearcher, RolingAverage ra, String descriptor) throws IOException, InterruptedException {
-        PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-warming.txt"));        //now take measurements. Each iteration is taking around 0.4s on an
+        PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "search-warming.txt"));        //now take measurements. Each iteration is taking around 0.4s on an
         for (int i = 0; i < rounds; i++) {
             long timing = queryEachOnce(queryTerms, indexSearcher);
             Thread.sleep(JIT_REST); // let JIT do some work.
@@ -175,12 +176,12 @@ public class ExitableDirectoryReaderHackPerfTest {
         pw.close();
     }
 
-    private static ArrayList<TermQuery> loadTermsFile(File queryFile) throws IOException {
+    private static ArrayList<TermQuery> loadTermsFile(File queryFile, int termsToLoad) throws IOException {
         System.out.println("Loading terms from " + queryFile);
         BufferedReader reader = new BufferedReader(new FileReader(queryFile));
-        ArrayList<TermQuery> queryTerms = new ArrayList<>(TERMS_PER_ROUND);
+        ArrayList<TermQuery> queryTerms = new ArrayList<>(termsToLoad);
         int i= 0;
-        while (reader.ready() && i++ < TERMS_PER_ROUND ) {
+        while (reader.ready() && i++ < termsToLoad) {
             queryTerms.add(new TermQuery(new Term("body", reader.readLine())));
         }
         reader.close();
