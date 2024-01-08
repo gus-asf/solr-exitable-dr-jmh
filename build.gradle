@@ -32,6 +32,7 @@ test {
 }
 
 solr {
+    // tweak as needed
     zkHost 'localhost:2181/solr__home_gus_projects_gus-asf_solr_testing_wikidoc2'
     confName 'edr_perf'
     confDir 'src/main/solr/conf'
