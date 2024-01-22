@@ -56,11 +56,12 @@ public class ExitableDirectoryReaderHackPerfTest {
     public static final int TERMS_PER_ROUND = 1000;
 
     public static void main(String[] args) {
-        if (args.length < 3) {
-            System.out.println("Usage: java -jar test_dep-1.0-SNAPSHOT-unojar.jar <solr_home> <core_name> <java_home>");
+        if (args.length < 2) {
+            System.out.println("Usage: java -jar test_dep-1.0-SNAPSHOT-unojar.jar <solr_home> <core_name>");
+            System.exit(1);
         }
-        String[] split = args[2].split("/");
-        String jdk = split[split.length-1];
+        String[] split = System.getProperty("java.home").split("/");
+        String jdk = split[split.length - 1];
         String descriptor = Instant.now() + "-" + WARM_ROUNDS + "-" + ROUNDS + "-" +
                 System.getProperty("solr.useExitableDirectoryReader") + "-" + jdk;
 
@@ -84,7 +85,8 @@ public class ExitableDirectoryReaderHackPerfTest {
             ArrayList<TermQuery> queryTerms = loadTermsFile(queryFile, TERMS_PER_ROUND);
 //            perfTestQueries(solrCore, descriptor, queryTerms);
             queryTerms = loadTermsFile(queryFile, 100_000);
-            perfTestFacets(solrCore, descriptor, queryTerms);
+            //perfTestFacets(solrCore, descriptor, queryTerms);
+            perfTestSpellCheck(solrCore, descriptor, queryTerms);
             coreContainer.shutdown();
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
@@ -94,9 +96,48 @@ public class ExitableDirectoryReaderHackPerfTest {
         }
     }
 
+    private static void perfTestSpellCheck(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms) throws IOException, InterruptedException {
+        requestSpellcheck(solrCore, descriptor, queryTerms, 0, 100, "warming", 5);
+        requestSpellcheck(solrCore, descriptor, queryTerms, 0, 500, "data", 0);
+    }
+
+    private static void requestSpellcheck(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms, int offset, int num, String label, int delay) throws IOException, InterruptedException {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-spellcheck-" + label + ".txt"))) {
+            for (int i = offset * 3; i < num * 3 + offset * 3; i = i + 3) {
+                TermQuery termQuery1 = queryTerms.get(i);
+                TermQuery termQuery2 = queryTerms.get(i + 1);
+                TermQuery termQuery3 = queryTerms.get(i + 2);
+                String text1 = termQuery1.getTerm().text();
+                String text2 = termQuery2.getTerm().text();
+                String text3 = termQuery3.getTerm().text();
+                String text = text1 + text2 + text3 + "000⚓";
+                text = text.replaceAll(":", "");
+                System.out.println(text);
+                LocalSolrQueryRequest localSolrQueryRequest = makeSpellQuery(solrCore, text);
+                // We want to issue facet queries
+                SolrQueryResponse rsp = new SolrQueryResponse();
+                long start = System.nanoTime();
+                solrCore.execute(solrCore.getRequestHandler("/select"), localSolrQueryRequest, rsp);
+                long end = System.nanoTime();
+                long duration = end - start;
+                pw.println(duration);
+                Thread.sleep(delay);
+            }
+        }
+    }
+
+    private static LocalSolrQueryRequest makeSpellQuery(SolrCore solrCore, String term) {
+        ModifiableSolrParams solrParams = new ModifiableSolrParams();
+        solrParams.set(CommonParams.Q, term); // config defaults this to randomterm field
+        solrParams.set("spellcheck", "true");
+        solrParams.set("df", "randomLabel");
+
+        return new LocalSolrQueryRequest(solrCore, solrParams);
+    }
+
     private static void perfTestFacets(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms) throws IOException, InterruptedException {
-        requestfacets(solrCore, descriptor, queryTerms, 0, 50000,"warming", 5);
-        requestfacets(solrCore, descriptor, queryTerms, 50000,50000, "data",0);
+        requestfacets(solrCore, descriptor, queryTerms, 0, 50000, "warming", 5);
+        requestfacets(solrCore, descriptor, queryTerms, 50000, 50000, "data", 0);
     }
 
     private static LocalSolrQueryRequest makeFacetQuery(SolrCore solrCore, String term) {
@@ -104,12 +145,11 @@ public class ExitableDirectoryReaderHackPerfTest {
         solrParams.set(CommonParams.Q, "randomLabel:\"" + term + "\"");
         solrParams.set("facet", "true");
         solrParams.set("facet.field", "randomLabel");
-        LocalSolrQueryRequest localSolrQueryRequest = new LocalSolrQueryRequest(solrCore, solrParams);
-        return localSolrQueryRequest;
+        return new LocalSolrQueryRequest(solrCore, solrParams);
     }
 
     private static void requestfacets(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms, int offset, int num, String label, int delay) throws IOException, InterruptedException {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-facet-" + label + ".txt"));) {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(descriptor + "-facet-" + label + ".txt"))) {
             for (int i = offset; i < num + offset; i++) {
                 TermQuery termQuery = queryTerms.get(i);
                 String text = termQuery.getTerm().text();
@@ -129,7 +169,7 @@ public class ExitableDirectoryReaderHackPerfTest {
 
     private static void perfTestQueries(SolrCore solrCore, String descriptor, ArrayList<TermQuery> queryTerms) throws IOException, InterruptedException, ExecutionException {
         // for accurate comparison and faster testing write down our queries and re-use them.
-        
+
         ArrayList<Long> timings = new ArrayList<>();
         // throw away 100 runs as warmup
         RolingAverage ra = new RolingAverage(20);
@@ -146,6 +186,7 @@ public class ExitableDirectoryReaderHackPerfTest {
     }
 
     private static SolrIndexSearcher getSolrIndexSearcher(SolrCore solrCore) throws InterruptedException, ExecutionException {
+        @SuppressWarnings("unchecked")
         Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
         RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher(true, true, waitSearcher);
         waitSearcher[0].get();
@@ -180,7 +221,7 @@ public class ExitableDirectoryReaderHackPerfTest {
         System.out.println("Loading terms from " + queryFile);
         BufferedReader reader = new BufferedReader(new FileReader(queryFile));
         ArrayList<TermQuery> queryTerms = new ArrayList<>(termsToLoad);
-        int i= 0;
+        int i = 0;
         while (reader.ready() && i++ < termsToLoad) {
             queryTerms.add(new TermQuery(new Term("body", reader.readLine())));
         }

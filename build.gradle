@@ -37,6 +37,8 @@ test {
     useJUnitPlatform()
 }
 
+// NOTE: this is just for testing the config in a running solr cloud. The config will need to be placed in the test
+// index manually (or by whatever means is appropriate). Values below will vary for your install.
 solr {
     // tweak as needed
     zkHost 'localhost:2181/solr__home_gus_projects_gus-asf_solr_testing_wikidoc2'
