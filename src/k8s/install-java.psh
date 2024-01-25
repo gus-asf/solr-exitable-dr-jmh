@@ -1,0 +1,32 @@
+# Powershell script to install Java after log-in:
+# kubectl -it windows-benchmark -- powershell 
+
+# Define download URL and installer location
+$javaUrl = "https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.exe"
+$installer = "$env:TEMP\jdk-installer.exe"
+# Download Java installer
+Invoke-WebRequest -Uri $javaUrl -OutFile $installer
+
+# Install Java silently
+Start-Process -FilePath $installer -ArgumentList "/s" -Wait
+
+# Remove installer
+Remove-Item $installer
+
+# Add java to the PATH
+$env:PATH += ";C:\Program Files\Java\jdk-17\bin"
+
+$javaUrl = "https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.exe"
+Invoke-WebRequest -Uri $javaUrl -OutFile $installer
+Start-Process -FilePath $installer -ArgumentList "/s" -Wait
+Remove-Item $installer
+#$env:PATH += ";C:\Program Files\Java\jdk-21\bin"
+
+
+$javaUrl = "https://aka.ms/download-jdk/microsoft-jdk-11.0.22-windows-x64.msi"
+$installer = "$env:TEMP\jdk-installer.msi"
+Invoke-WebRequest -Uri $javaUrl -OutFile $installer
+Start-Process msiexec.exe $installer -ArgumentList "$installer /quiet" -Wait
+Remove-Item $installer
+# $env.PATH += ";C:\Program Files\Microsoft\jdk-11.0.22.7-hotspot\bin"
+

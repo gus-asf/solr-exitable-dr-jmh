@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: windows-benchmark
+spec:
+  #securityContext:
+    #windowsOptions:
+      #runAsUserName: "ContainerUser"
+      #runAsUserName: "NT AUTHORITY\\Local service"
+  nodeSelector:
+    kubernetes.io/os: windows
+  containers:
+  - name: server
+    image: mcr.microsoft.com/windows/servercore:1809-KB5034127
+    command: ["ping", "-t", "localhost"]
